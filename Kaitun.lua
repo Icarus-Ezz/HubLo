@@ -1,4 +1,4 @@
---//
+--[[
 repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
 getgenv().Key = ""
 Config.Kaitun = {
@@ -54,7 +54,58 @@ Config.Kaitun = {
         },
     }
 loadstring(game:HttpGet(""))()
-//--
+]]--
+
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+
+local HttpService = game:GetService("HttpService")
+local hwid = gethwid and gethwid() or "Unknown"
+local key = getgenv().Key or nil
+
+if not key then
+    game.Players.LocalPlayer:Kick("⚠️ You must enter a key!")
+    return
+end
+
+local baseUrl = "http://de1.bot-hosting.net:20328"
+local keyVerifyUrl = baseUrl .. "/check_key_ez?key=" .. key
+local hwidCheckUrl = baseUrl .. "/check_hwid?hwid=" .. hwid .. "&key=" .. key
+
+local function getData(url)
+    for i = 1, 2 do 
+        local success, response = pcall(function()
+            return game:HttpGet(url)
+        end)
+
+        if success and response and response ~= "" then
+            local successDecode, data = pcall(function()
+                return HttpService:JSONDecode(response)
+            end)
+            if successDecode then
+                return data
+            end
+        end
+
+        wait(1)
+    end
+
+    return nil 
+end
+
+-- Check key
+local verifyResponse = getData(keyVerifyUrl)
+if not verifyResponse or verifyResponse.status ~= "true" then
+    game.Players.LocalPlayer:Kick(verifyResponse and verifyResponse.msg or "⚠️ Invalid Key")
+    return
+end
+
+-- Check HWID
+local hwidResponse = getData(hwidCheckUrl)
+if not hwidResponse or hwidResponse.status ~= "true" then
+    game.Players.LocalPlayer:Kick(hwidResponse and hwidResponse.msg or "⚠️ Invalid HWID.")
+    return
+end
+
 local DCSettings = Config["Discord"]
 local FSSettings = Config["Autofarm"]
 
@@ -115,7 +166,150 @@ end
 
 SelectToolWeapon = "Combat"
 
--- Instances:
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local isTweening = false
+local currentTween = nil
+
+function CheckNearestTeleporter(aI)
+    local vcspos = aI.Position
+    local minDist = math.huge
+    local chosenTeleport = nil
+    local y = game.PlaceId
+
+    local TableLocations = {}
+
+    if y == 2753915549 then
+        TableLocations = {
+            ["Sky3"] = Vector3.new(-7894, 5547, -380),
+            ["Sky3Exit"] = Vector3.new(-4607, 874, -1667),
+            ["UnderWater"] = Vector3.new(61163, 11, 1819),
+            ["Underwater City"] = Vector3.new(61165.19140625, 0.18704631924629211, 1897.379150390625),
+            ["Pirate Village"] = Vector3.new(-1242.4625244140625, 4.787059783935547, 3901.282958984375),
+            ["UnderwaterExit"] = Vector3.new(4050, -1, -1814)
+        }
+    elseif y == 4442272183 then
+        TableLocations = {
+            ["Swan Mansion"] = Vector3.new(-390, 332, 673),
+            ["Swan Room"] = Vector3.new(2285, 15, 905),
+            ["Cursed Ship"] = Vector3.new(923, 126, 32852),
+            ["Zombie Island"] = Vector3.new(-6509, 83, -133)
+        }
+    elseif y == 7449423635 then
+        TableLocations = {
+            ["Floating Turtle"] = Vector3.new(-12462, 375, -7552),
+            ["Hydra Island"] = Vector3.new(5657.88623046875, 1013.0790405273438, -335.4996337890625),
+            ["Mansion"] = Vector3.new(-12462, 375, -7552),
+            ["Castle"] = Vector3.new(-5036, 315, -3179),
+            ["Dimensional Shift"] = Vector3.new(-2097.3447265625, 4776.24462890625, -15013.4990234375),
+            ["Beautiful Pirate"] = Vector3.new(5319, 23, -93),
+            ["Beautiful Room"] = Vector3.new(5314.58203, 22.5364361, -125.942276, 1, 2.14762768e-08, -1.99111154e-13, -2.14762768e-08, 1, -3.0510602e-08, 1.98455903e-13, 3.0510602e-08, 1),
+            ["Temple of Time"] = Vector3.new(28286, 14897, 103)
+        }
+    end
+
+    for _, v in pairs(TableLocations) do
+        local dist = (v - vcspos).Magnitude
+        if dist < minDist then
+            minDist = dist
+            chosenTeleport = v
+        end
+    end
+
+    local playerPos = game.Players.LocalPlayer.Character.HumanoidRootPart.Position
+    if minDist <= (vcspos - playerPos).Magnitude then
+        return chosenTeleport
+    end
+end
+
+local function createEffect(char)
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    if not char:FindFirstChild("TweenHighlight") then
+        local h = Instance.new("Highlight")
+        h.Name = "TweenHighlight"
+        h.FillColor = Color3.new(1, 1, 1)
+        h.FillTransparency = 0.5
+        h.OutlineColor = Color3.new(1, 1, 1)
+        h.OutlineTransparency = 0
+        h.Adornee = char
+        h.Parent = char
+    end
+    if not char.HumanoidRootPart:FindFirstChild("TweenAura") then
+        local aura = Instance.new("ParticleEmitter", char.HumanoidRootPart)
+        aura.Name = "TweenAura"
+        aura.Texture = "rbxassetid://discord.gg/vxezehub"
+        aura.Size = NumberSequence.new(2)
+        aura.Transparency = NumberSequence.new(0.2)
+        aura.Lifetime = NumberRange.new(0.5, 1)
+        aura.Rate = 60
+        aura.Speed = NumberRange.new(5, 10)
+        aura.SpreadAngle = Vector2.new(360, 360)
+        aura.Color = ColorSequence.new(Color3.new(1, 1, 1))
+    end
+end
+
+local function removeEffect(char)
+    if not char then return end
+    if char:FindFirstChild("TweenHighlight") then char.TweenHighlight:Destroy() end
+    if char:FindFirstChild("HumanoidRootPart") and char.HumanoidRootPart:FindFirstChild("TweenAura") then
+        char.HumanoidRootPart.TweenAura:Destroy()
+    end
+end
+
+function Tween2(targetCFrame)
+    pcall(function()
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+        local hrp = char.HumanoidRootPart
+
+        local telePos = CheckNearestTeleporter(hrp)
+        if telePos and (hrp.Position - targetCFrame.Position).Magnitude >= 1500 then
+            hrp.CFrame = CFrame.new(telePos + Vector3.new(0, 5, 0))
+            task.wait(0.3)
+        end
+
+        createEffect(char)
+
+        -- Tween
+        isTweening = true
+        local distance = (targetCFrame.Position - hrp.Position).Magnitude
+        local speed = 350
+        local duration = distance / speed
+
+        local info = TweenInfo.new(duration, Enum.EasingStyle.Linear)
+        local tween = TweenService:Create(hrp, info, {CFrame = targetCFrame})
+        currentTween = tween
+
+        tween:Play()
+        local startTick = tick()
+
+        -- Kiểm tra dừng thủ công
+        while tick() - startTick < duration and isTweening do
+            if getgenv().StopTweenNow then
+                tween:Cancel()
+                break
+            end
+            task.wait(0.1)
+        end
+
+        removeEffect(char)
+        isTweening = false
+        currentTween = nil
+    end)
+end
+
+-- Dừng Tween
+function StopTween2()
+    getgenv().StopTweenNow = true
+    if currentTween then
+        currentTween:Cancel()
+    end
+    removeEffect(LocalPlayer.Character)
+    isTweening = false
+    currentTween = nil
+end
 
 local LocalPlayer = game:GetService("Players").LocalPlayer
 
@@ -1548,30 +1742,6 @@ spawn(function()
 	end)
 
     
---Magnet
-spawn(function()
-    game:GetService("RunService").Heartbeat:Connect(function()
-		pcall(function()
-            local MyLevel = game.Players.LocalPlayer.Data.Level.Value
-            if _G.AutoFarm or StatrMagnet then
-                for i,v in pairs(game.Workspace.Enemies:GetChildren()) do
-                    if not string.find(v.Name,"Boss") and (v.HumanoidRootPart.Position-PosMon.Position).magnitude <= 500 then
-                        v.HumanoidRootPart.CFrame = PosMon
-                        v.Humanoid.JumpPower = 0
-                        v.Humanoid.WalkSpeed = 0
-                        v.HumanoidRootPart.CanCollide = false
-                        if v.Humanoid:FindFirstChild("Animator") then
-                            v.Humanoid.Animator:Destroy()
-                        end
-                        sethiddenproperty(game.Players.LocalPlayer, "SimulationRadius",  math.huge)
-						v.Humanoid:ChangeState(11)
-                        v.Humanoid:ChangeState(14)
-                    end
-                end
-            end
-        end)
-    end)
-end)
 
     local VirtualUser = game:GetService('VirtualUser')
     local kkii = require(game.ReplicatedStorage.Util.CameraShaker)
@@ -1632,7 +1802,7 @@ end)
 
     _G.level700CheckSea2ThieuNang = true
 
-    spawn(function() -- vẫn còn dùng được.
+    spawn(function() 
         while wait(.1) do
             if _G.level700CheckSea2ThieuNang then
                 local Lv = game.Players.LocalPlayer.Data.Level.Value
@@ -2615,7 +2785,6 @@ spawn(function()
     end
 end)
 
-warn("AFK")
 local value = game:GetService("VirtualUser")
 game:GetService("Players").LocalPlayer.Idled:connect(function()
    vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame)
@@ -2900,8 +3069,6 @@ spawn(function()
         end 
 	end
 end)
-
-print("dit me legitterium. skid ngu vai cut - thuy")
 
 _G.thuybuy = true
 
