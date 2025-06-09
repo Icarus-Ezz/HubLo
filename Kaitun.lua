@@ -1,5 +1,60 @@
-
-
+--//
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+getgenv().Key = ""
+Config.Kaitun = {
+    Setting = {
+        ["Team"] = "Marines",         --Pirates\Marines
+        ["Boots FPS"] = false,
+        ["White Screen"] = false,
+        ["No Stuck Chair"] = true, 
+        ["Auto Rejoin"] = true,
+    },
+    ChestFarm = {
+        ["Start Farm Chest"] = true,
+        ["Stop When Have Item"] = true, 
+    },
+    Webhook = {
+        ["Webhook Url"] = "",
+        ["Send Webhook"] = true,
+    },
+        ["Get Items"] = {
+            ["Saber"] = true,
+            ["Godhuman"] =  true,
+            ["Skull Guitar"] = true,
+            ["Mirror Fractal"] = true,
+            ["Cursed Dual Katana"] = false,
+            ["Upgrade Race V2-V3"] = true,
+            ["Auto Pull Lever"] = true,
+            ["Shark Anchor"] = true, --- if have cdk,sg,godhuman
+        },
+        ["Get Rare Items"] = {
+            ["Rengoku"] = false,
+            ["Dragon Trident"] = false, 
+            ["Pole (1st Form)"] = false,
+            ["Gravity Blade"]  = false,
+        },
+        ["Farm Fragments"] = {
+            ["Enabled"]  = false,
+            ["Fragment"] = 50000,
+        },
+        ["Auto Chat"] = {
+            ["Enabled"] = false,
+            ["Text"] = "",
+        },
+        },
+        ["Farm Mastery"] = {
+            ["Melee"] = false,
+            ["Sword"] = false,
+        },
+        ["Buy Haki"] = {
+            ["Enhancement"] = false,
+            ["Skyjump"] = true,
+            ["Flash Step"] = true,
+            ["Observation"] = true,
+        },
+    }
+loadstring(game:HttpGet(""))()
+//--
 local DCSettings = Config["Discord"]
 local FSSettings = Config["Autofarm"]
 
@@ -57,7 +112,6 @@ function TP(P)
 	):Play()
 end
 
--- gui // line 662 to continue
 
 SelectToolWeapon = "Combat"
 
@@ -706,37 +760,20 @@ local function drag2()
 end
 coroutine.wrap(drag2)()
 
-print("Dang load")
+print("Sibidi")
 
 -- Main code
-
-spawn(function()
-    while task.wait() do
-        if game.Players.LocalPlayer.Team == nil then
-            pcall(function()
-                if _G.Team == "Pirates" then
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton.Size = UDim2.new(10000,1000,10000,1000)
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton.Position = UDim2.new(-4,0,-5,0)
-                    wait(.5)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,true,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,false,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                elseif _G.Team == "Marines" then
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton.Size = UDim2.new(10000,1000,10000,1000)
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Marines.Frame.ViewportFrame.TextButton.Position = UDim2.new(-4,0,-5,0)
-                    wait(.5)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,true,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,false,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                else
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton.Size = UDim2.new(10000,1000,10000,1000)
-                    game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton.Position = UDim2.new(-4,0,-5,0)
-                    wait(.5)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,true,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                    game:GetService("VirtualInputManager"):SendMouseButtonEvent(605,394,0,false,game:GetService("Players").LocalPlayer.PlayerGui.Main.ChooseTeam.Container.Pirates.Frame.ViewportFrame.TextButton,0)
-                end
-            end)
-        end
+if Config.Kaitun.Setting["Team"] == "Marines" then
+    if not game.Players.LocalPlayer.Team or game.Players.LocalPlayer.Team.Name ~= "Marines" then
+        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Marines")
     end
-end)
+elseif getgenv().config.Setting["Team"] == "Pirates" then
+    if not game.Players.LocalPlayer.Team or game.Players.LocalPlayer.Team.Name ~= "Pirates" then
+        game.ReplicatedStorage.Remotes.CommF_:InvokeServer("SetTeam", "Pirates")
+    end
+end
+
+wait(3)
 
 function UseCode(Text) -- theres no button.
     game:GetService("ReplicatedStorage").Remotes.Redeem:InvokeServer(Text)
@@ -759,8 +796,6 @@ UseCode("SUB2NOOBMASTER123")
 UseCode("Axiore")
 UseCode("TantaiGaming")
 UseCode("STRAWHATMAINE") 
-
-warn("redeemed")
 
     vu = true
     AutoKaitan = vu
@@ -860,7 +895,7 @@ end
  
 _G.AutoStats = true
 
-spawn(function() -- only for sea 1, co the se lam cho sea 2 va 3 vi tui thay great tree ma nang moi melee la chet.
+spawn(function() 
 	while wait() do
 		if _G.AutoStats then
 			if game:GetService("Players").LocalPlayer.Data.Stats.Melee.Level.Value < 2400 then
